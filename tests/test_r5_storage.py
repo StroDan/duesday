@@ -37,10 +37,11 @@ def test_R5_save_creates_parent_folder(tmp_path):
 
 
 def test_R5_save_leaves_no_temp_files(tmp_path):
-    path = tmp_path / "tasks.json"
+    folder = tmp_path / "store"  # tmp_path itself also holds the fake home folder
+    path = folder / "tasks.json"
     save_tasks(path, [Task(1, "x", None)])
     save_tasks(path, [Task(1, "y", None)])
-    assert [p.name for p in tmp_path.iterdir()] == ["tasks.json"]
+    assert [p.name for p in folder.iterdir()] == ["tasks.json"]
 
 
 @pytest.mark.parametrize("content", ["not json", "[]", '{"tasks": [{"id": "x"}]}'])
