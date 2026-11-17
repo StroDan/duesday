@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Launcher for duesday's `plan` command.
+# First run: creates .venv with Python 3.12 and installs requirements.txt.
+# Works in macOS/Linux shells and in Git Bash on Windows.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VENV="$ROOT/.venv"
+STAMP="$VENV/.requirements-installed"
+
+if [[ -x "$VENV/Scripts/python.exe" ]]; then
+  PY="$VENV/Scripts/python.exe"        # Windows venv layout
+else
+  PY="$VENV/bin/python"
+fi
+
+is_312_plus() {  # usage: is_312_plus <python command...>
+  "$@" -c 'import sys; sys.exit(sys.version_info < (3, 12))' >/dev/null 2>&1
+}
+
+find_python() {
+  local c
+  for c in /opt/homebrew/bin/python3.12 python3.12; do
+    if command -v "$c" >/dev/null 2>&1 && is_312_plus "$c"; then echo "$c"; return; fi
+  done
+  if command -v py >/dev/null 2>&1 && is_312_plus py -3.12; then echo "py -3.12"; return; fi
+  for c in python3 python; do
+    if command -v "$c" >/dev/null 2>&1 && is_312_plus "$c"; then echo "$c"; return; fi
+  done
+  return 1
+}
+
+if [[ ! -x "$PY" ]]; then
+  if ! BASE="$(find_python)"; then
+    echo "plan: Python 3.12 or newer is required but was not found." >&2
+    echo "      Install it (e.g. 'brew install python@3.12') and run ./plan again." >&2
+    exit 1
+  fi
+  echo "plan: first run, creating .venv with $BASE ..." >&2
+  # shellcheck disable=SC2086  # BASE may be "py -3.12" and must split
+  if ! $BASE -m venv "$VENV"; then
+    rm -rf "$VENV"
+    echo "plan: could not create .venv" >&2
+    exit 1
+  fi
+  if [[ -x "$VENV/Scripts/python.exe" ]]; then PY="$VENV/Scripts/python.exe"; else PY="$VENV/bin/python"; fi
+fi
+
+if ! cmp -s "$ROOT/requirements.txt" "$STAMP"; then
+  echo "plan: installing requirements ..." >&2
+  "$PY" -m pip install --disable-pip-version-check -q -r "$ROOT/requirements.txt" >&2
+  cp "$ROOT/requirements.txt" "$STAMP"
+fi
+
+# PYTHONPATH (not cd) so relative --file paths still resolve from the caller's folder.
+# In Git Bash, `pwd -W` gives the native C:/... path that Windows Python understands.
+export PYTHONPATH="$(cd "$ROOT" && { pwd -W 2>/dev/null || pwd; })"
+export PYTHONUTF8=1   # so ⚠ and ✔ print correctly on Windows consoles
+exec "$PY" -m duesday "$@"
