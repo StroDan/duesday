@@ -39,3 +39,16 @@ items clearly highlighted.
 - R6 Make urgency stand out visually. Using colors and symbols in the
   terminal, overdue tasks are shown in red with a ⚠ symbol, tasks due
   within 3 days are highlighted, and done tasks are dimmed with a ✔.
+- R7 Menu. When the user runs `plan` with no command, a menu opens
+  that lists the available actions by number. The menu has these
+  options: add, list, done, month, and quit. When an option needs
+  information (like a title or a task number), the menu asks for it one
+  step at a time, and the user can skip the optional due date. After
+  each action, the menu comes back until the user picks quit. If `plan`
+  runs inside a script (no one is typing), it prints a short message
+  showing how to use the commands and stops instead of waiting for
+  input.
+- R8 Clear screen in the menu. The screen is cleared before each menu
+  screen appears, so the menu always starts on a clean screen. Normal
+  commands like `plan list` do not clear the screen, so earlier output
+  stays visible.
