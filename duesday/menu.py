@@ -1,4 +1,5 @@
-"""Interactive menu (R7), with the screen cleared before each menu screen (R8).
+"""Interactive menu (R7), with the screen cleared before each menu screen (R8)
+and `b` at any action question to go back without saving (R9).
 
 Never reads the clock or stdin itself: `today`, the console to print on and the
 `ask` input function are passed in, so tests can supply the answers.
@@ -32,6 +33,20 @@ OPTIONS = [
     ("q", "Quit"),
 ]
 
+BACK_HINT = "(b to go back)"
+
+
+class BackToMenu(Exception):
+    """The user typed b at an action question (R9): stop and save nothing."""
+
+
+def _ask_or_back(ask: Ask, question: str) -> str:
+    """Ask `question` with the R9 hint; return the trimmed answer, or raise BackToMenu on b."""
+    answer = ask(f"{question} {BACK_HINT}: ").strip()
+    if answer.lower() == "b":
+        raise BackToMenu
+    return answer
+
 
 def run_menu(path: Path, today: date, console: Console, ask: Ask | None = None) -> int:
     ask = ask or console.input
@@ -51,6 +66,9 @@ def run_menu(path: Path, today: date, console: Console, ask: Ask | None = None) 
             console.print()
             try:
                 command = actions[choice](path, today, console, ask)
+            except BackToMenu:
+                console.print(Text("Back to the menu, nothing was saved.", style="yellow"))
+                continue  # R9: straight back, no tip and no Press Enter
             except (TaskError, StorageError) as e:
                 console.print(render.error_message(e))
                 command = None
@@ -77,14 +95,14 @@ def _draw_menu(console: Console) -> None:
 def _add(path: Path, today: date, console: Console, ask: Ask) -> list[str]:
     tasks = load_tasks(path)  # first, so a broken file is reported before any typing
 
-    title = ask("Title: ").strip()
+    title = _ask_or_back(ask, "Title")
     while not title:
         console.print(Text("The title cannot be empty.", style="red"))
-        title = ask("Title: ").strip()
+        title = _ask_or_back(ask, "Title")
 
     due = None
     while True:
-        text = ask("Due date (YYYY-MM-DD, blank for none): ").strip()
+        text = _ask_or_back(ask, "Due date (YYYY-MM-DD, blank for none)")
         if not text:
             break
         try:
@@ -112,7 +130,7 @@ def _done(path: Path, today: date, console: Console, ask: Ask) -> list[str] | No
     console.print()
 
     while True:
-        text = ask("Task number: ").strip()
+        text = _ask_or_back(ask, "Task number")
         try:
             number = int(text)
             break
