@@ -9,7 +9,7 @@ from rich.console import Group
 from rich.table import Table
 from rich.text import Text
 
-from .tasks import Task, Urgency, month_marks, overdue_before_month, urgency
+from .tasks import Task, Urgency, month_marks, overdue_before_month, sort_tasks, urgency
 
 _LOOK = {
     Urgency.OVERDUE: ("⚠", "bold red"),
@@ -63,6 +63,28 @@ def task_table(tasks: list[Task], today: date) -> Table:
             style=style_for(u) or None,
         )
     return table
+
+
+def task_list(tasks: list[Task], today: date) -> Table | Text:
+    """What `plan list` shows: the sorted table, or a note when there are no tasks."""
+    if not tasks:
+        return Text("No tasks yet.")
+    return task_table(sort_tasks(tasks, today), today)
+
+
+def added_message(task: Task) -> Text:
+    due = f" (due {task.due.isoformat()})" if task.due else ""
+    return Text(f"Added task #{task.id}: {task.title}{due}", style="green")
+
+
+def done_message(task: Task, changed: bool) -> Text:
+    if changed:
+        return Text(f"Marked task #{task.id} done: {task.title}", style="green")
+    return Text(f"Task #{task.id} is already done.")
+
+
+def error_message(error: Exception) -> Text:
+    return Text(f"Error: {error}", style="red")
 
 
 def month_weeks(year: int, month: int) -> list[list[int]]:

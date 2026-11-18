@@ -7,11 +7,10 @@ from datetime import date
 from pathlib import Path
 
 from rich.console import Console
-from rich.text import Text
 
 from . import render
 from .storage import StorageError, default_path, load_tasks, save_tasks
-from .tasks import TaskError, add_task, mark_done, parse_due, sort_tasks
+from .tasks import TaskError, add_task, mark_done, parse_due
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,9 +43,6 @@ def main(argv: list[str] | None = None, today: date | None = None, console: Cons
     console = console or Console()
     path = Path(args.file) if args.file else default_path()
 
-    def say(text: str, style: str = "") -> None:
-        console.print(Text(text, style=style))
-
     try:
         tasks = load_tasks(path)
 
@@ -54,27 +50,21 @@ def main(argv: list[str] | None = None, today: date | None = None, console: Cons
             due = parse_due(args.due) if args.due is not None else None
             task = add_task(tasks, args.title, due)
             save_tasks(path, tasks)
-            msg = f"Added task #{task.id}: {task.title}"
-            say(msg + (f" (due {task.due.isoformat()})" if task.due else ""), "green")
+            console.print(render.added_message(task))
 
         elif args.command == "list":
-            if not tasks:
-                say("No tasks yet.")
-            else:
-                console.print(render.task_table(sort_tasks(tasks, today), today))
+            console.print(render.task_list(tasks, today))
 
         elif args.command == "done":
             task, changed = mark_done(tasks, args.number)
             if changed:
                 save_tasks(path, tasks)
-                say(f"Marked task #{task.id} done: {task.title}", "green")
-            else:
-                say(f"Task #{task.id} is already done.")
+            console.print(render.done_message(task, changed))
 
         elif args.command == "month":
             console.print(render.month_view(tasks, today))
 
     except (TaskError, StorageError) as e:
-        say(f"Error: {e}", "red")
+        console.print(render.error_message(e))
         return 1
     return 0
