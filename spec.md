@@ -174,6 +174,28 @@ still visible without color.
   no-terminal usage message never clear, so earlier output stays visible.
 - When output is not a terminal, `rich` turns `clear()` into a no-op.
 
+## R9 Go back in the menu
+
+- Every question asked during a menu action shows the hint `(b to go back)`
+  before its colon:
+  - `Title (b to go back): `
+  - `Due date (YYYY-MM-DD, blank for none) (b to go back): `
+  - `Task number (b to go back): `
+- If the answer, after trimming spaces, is `b` or `B`, the action stops at once:
+  nothing is saved or changed, the menu prints
+  `Back to the menu, nothing was saved.` and goes straight back to the menu
+  screen (cleared, as in R8). There is no tip and no `Press Enter` step.
+- `b` is checked before any other validation, so it works even where the
+  answer would otherwise be rejected (e.g. at `Task number`).
+- Because of this, a task titled just `b` cannot be added from the menu; use
+  `plan add "b"` instead.
+- Not covered by R9: the menu's own `Choose: ` prompt (`q` already quits;
+  `b` there gets the usual `Choose 1-4 or q.`) and the `Press Enter to return
+  to the menu` prompt (any answer already returns to the menu).
+- One helper in `duesday/menu.py` asks every action question and raises an
+  internal `BackToMenu` exception on `b`; `run_menu` catches it. Actions do
+  not repeat the check.
+
 ## Code layout
 
 - `duesday/tasks.py`: Task model, urgency, sorting, add/done (pure logic, no printing).
@@ -181,7 +203,7 @@ still visible without color.
 - `duesday/render.py`: builds `rich` tables/text from tasks + today.
 - `duesday/cli.py`: argument parsing; the only place that reads the clock. Prints
   command output, and opens the menu when there is no command.
-- `duesday/menu.py`: the interactive menu (R7, R8). Gets `path`, `today`, a
+- `duesday/menu.py`: the interactive menu (R7, R8, R9). Gets `path`, `today`, a
   `console` and an `ask` input function as parameters, so it never reads the clock or
   stdin directly and tests can supply answers. It prints only through the console it is given.
 - `tests/`: pytest; every test name starts with the requirement ID it checks.
