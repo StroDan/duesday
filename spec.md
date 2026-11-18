@@ -6,6 +6,7 @@ two disagree, `problem.md` wins and this file gets fixed.
 ## Running
 
 - The command is `./plan <command> [options]`, run from the repo folder.
+  `./plan` with no command opens the menu (R7).
 - `./plan` is a bash launcher. On first run it creates `.venv` with Python 3.12
   (prefers `/opt/homebrew/bin/python3.12`; otherwise `python3.12`, then `py -3.12`
   on Windows) and installs `requirements.txt`. It reinstalls when
@@ -121,10 +122,66 @@ Colors come from `rich`; they are turned off automatically when output is not
 a terminal (or `NO_COLOR` is set). The symbols are always shown, so urgency is
 still visible without color.
 
+## R7 Menu
+
+`plan` (no command; `--file PATH` is still allowed)
+
+- If standard input is a terminal, the menu opens. Otherwise (a script, a
+  pipe) it prints the one-line usage (`usage: plan [-h] [--file FILE] command ...`)
+  and exits 0 without reading input, so it never hangs.
+- The menu screen shows the title and these options:
+
+  ```
+  1  Add a task
+  2  List tasks
+  3  Mark a task done
+  4  Month view
+  q  Quit
+  ```
+
+  then asks `Choose: `. Surrounding spaces are ignored and `Q` works like `q`.
+  Anything else prints `Choose 1-4 or q.` and asks again on the same screen.
+- **1 Add** asks `Title: ` (asks again if empty) and then
+  `Due date (YYYY-MM-DD, blank for none): ` (blank means no date; an invalid
+  date shows the error in red and asks again). Then it saves the task and prints the
+  same `Added task #N: ...` line as `plan add`.
+- **2 List** prints the same output as `plan list`.
+- **3 Done** first shows the task list (or `No tasks yet.` and goes back), then
+  asks `Task number: `. Input that is not a whole number asks again. Task
+  errors (`no task #N`) are shown in red. Otherwise prints the same lines as
+  `plan done N`.
+- **4 Month** prints the same output as `plan month`.
+- After each action the menu shows a tip with the equivalent command, e.g.
+  `Tip: ./plan add "Essay" --due 2026-11-20`, then
+  `Press Enter to return to the menu`. The tip includes `--file PATH` when the
+  menu uses a non-default file. (For a done that failed, no tip is shown.)
+- Tasks are loaded from the file at the start of every action, so the menu
+  always shows what is on disk. A storage error is shown in red and the menu
+  carries on.
+- `q` prints `Bye!` and exits 0. Ctrl+C or end of input at any prompt also
+  prints `Bye!` and exits 0, with no traceback.
+- The menu uses the same functions as the commands (`add_task`, `parse_due`,
+  `mark_done`, `sort_tasks`, `load_tasks`, `save_tasks`, `render.task_table`,
+  `render.month_view`), so behavior cannot drift between the two.
+
+## R8 Clear screen in the menu
+
+- The screen is cleared (`console.clear()`) right before each menu screen is
+  drawn: when the menu opens and each time the user returns to it.
+- Re-asking after an invalid choice does not clear again (same screen).
+- Action results are not cleared until the user presses Enter.
+- Only `duesday/menu.py` clears. `plan add/list/done/month` and the
+  no-terminal usage message never clear, so earlier output stays visible.
+- When output is not a terminal, `rich` turns `clear()` into a no-op.
+
 ## Code layout
 
 - `duesday/tasks.py`: Task model, urgency, sorting, add/done (pure logic, no printing).
 - `duesday/storage.py`: load/save JSON, default path.
 - `duesday/render.py`: builds `rich` tables/text from tasks + today.
-- `duesday/cli.py`: argument parsing; the only place that reads the clock and prints.
+- `duesday/cli.py`: argument parsing; the only place that reads the clock. Prints
+  command output, and opens the menu when there is no command.
+- `duesday/menu.py`: the interactive menu (R7, R8). Gets `path`, `today`, a
+  `console` and an `ask` input function as parameters, so it never reads the clock or
+  stdin directly and tests can supply answers. It prints only through the console it is given.
 - `tests/`: pytest; every test name starts with the requirement ID it checks.
