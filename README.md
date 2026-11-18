@@ -28,7 +28,8 @@ installs dependencies automatically):
 
 Run `./plan` with no command to open a numbered menu: `1` add, `2` list,
 `3` done, `4` month, `q` quit. It asks for what it needs one step at a time
-(press Enter to skip the due date). After each action it shows the matching
+(press Enter to skip the due date, or type `b` at any question to go back to
+the menu without saving). After each action it shows the matching
 command as a tip, e.g. `Tip: ./plan add "Essay" --due 2026-11-20`, so you can
 learn the shortcuts. Ctrl+C also quits. The menu clears the screen each time
 it is shown; the normal commands never clear it.
