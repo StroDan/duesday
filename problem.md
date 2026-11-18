@@ -52,3 +52,8 @@ items clearly highlighted.
   screen appears, so the menu always starts on a clean screen. Normal
   commands like `plan list` do not clear the screen, so earlier output
   stays visible.
+- R9 Go back in the menu. At any question in the menu (such as the task
+  title, the due date, or the task number), the user can type `b` to
+  cancel and go back to the main menu. Nothing is saved or changed.
+  Each question shows a short hint like "(b to go back)" so the user
+  knows how.
