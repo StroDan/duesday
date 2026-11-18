@@ -146,7 +146,7 @@ still visible without color.
   date shows the error in red and asks again). Then it saves the task and prints the
   same `Added task #N: ...` line as `plan add`.
 - **2 List** prints the same output as `plan list`.
-- **3 Done** first shows the task list (or `No tasks yet.` and goes back), then
+- **3 Done** first shows the task list (or `No tasks yet.` and skips to "Press Enter"), then
   asks `Task number: `. Input that is not a whole number asks again. Task
   errors (`no task #N`) are shown in red. Otherwise prints the same lines as
   `plan done N`.
