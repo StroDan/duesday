@@ -21,7 +21,7 @@ def test_R8_screen_cleared_before_first_menu_screen(menu):
 
 def test_R8_cleared_once_per_menu_screen(menu, task_file):
     save_tasks(task_file, [Task(1, "a")])
-    menu("2", "", "4", "", "3", "1", "", "1", "b", "", "", "q")
+    menu("2", "", "4", "", "3", "1", "", "1", "Essay", "", "", "q")
     assert menu.console.clears == 5  # first screen + one return after each of 4 actions
 
 
