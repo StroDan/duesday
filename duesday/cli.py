@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from datetime import date
 from pathlib import Path
 
 from rich.console import Console
+from rich.text import Text
 
 from . import render
+from .menu import run_menu
 from .storage import StorageError, default_path, load_tasks, save_tasks
 from .tasks import TaskError, add_task, mark_done, parse_due
 
@@ -22,7 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(prog="plan", description="Keep all your deadlines in one place.")
     parser.add_argument("--file", default=None, help=file_help)
-    sub = parser.add_subparsers(dest="command", required=True, metavar="command")
+    # Optional: with no command, main() opens the menu (R7).
+    sub = parser.add_subparsers(dest="command", required=False, metavar="command")
 
     p_add = sub.add_parser("add", parents=[sub_common], help="add a task")
     p_add.add_argument("title")
@@ -38,10 +42,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None, today: date | None = None, console: Console | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
     today = today or date.today()
     console = console or Console()
     path = Path(args.file) if args.file else default_path()
+
+    if args.command is None:
+        if sys.stdin is not None and sys.stdin.isatty():
+            return run_menu(path, today, console)
+        # No one is typing (script, pipe): show how to use it instead of waiting.
+        console.print(Text(parser.format_usage().rstrip()))
+        return 0
 
     try:
         tasks = load_tasks(path)
